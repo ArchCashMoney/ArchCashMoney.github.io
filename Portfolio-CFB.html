@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Football Simulator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      margin: 0;
+      background: #f1f3f6;
+    }
+
+    header {
+      background: #FF8200;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .section-title {
+      font-size: 1.4em;
+      margin: 20px 0 10px;
+      border-bottom: 2px solid #444;
+      padding-bottom: 5px;
+    }
+
+    .player-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .player-card {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      width: 200px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .player-card.recruit {
+      background: #dbe9ff;
+    }
+
+    .player-card .name {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 4px;
+    }
+
+    .player-card .info {
+      font-size: 0.9em;
+      margin-bottom: 6px;
+    }
+
+    .ratings {
+      font-size: 0.85em;
+    }
+
+    .button {
+      margin-top: 20px;
+      padding: 10px 18px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .season-summary, .depth-chart, .top-25 {
+      margin-top: 20px;
+      background: #eee;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
+    .player-card input.select {
+      transform: scale(1.1);
+      margin-top: 8px;
+    }
+
+    /* Popup menu styling */
+    #teamMenu {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      width: 300px;
+      display: none;
+      z-index: 1000;
+    }
+
+    #menuOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+
+    #teamMenu h3 {
+      margin-top: 0;
+      color: #002868;
+    }
+
+    #teamMenu button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #teamMenu button:hover {
+      background: #005bb5;
+    }
+  </style>
+</head>
+<body>
+
+<header>🏈 Biased Football Simulator</header>
+
+<div class="container">
+  <button class="button" onclick="openTeamMenu()">Open Team Menu</button>
+  
+  <div class="section-title" id="seasonTitle">Season 1 - Roster</div>
+  <div id="roster" class="player-grid"></div>
+  
+  <div class="section-title">Available Recruits</div>
+  <p>Recruit up to <strong>5 players</strong>. Fewer = better chances of signing them.</p>
+  <div id="recruits" class="player-grid"></div>
+  
+  <button class="button" onclick="submitRecruits()">Submit Recruits</button>
+  <div id="message"></div>
+
+  <div class="season-summary" id="seasonSummary"></div>
+  <div class="depth-chart" id="depthChart" style="display: none;"></div>
+  <div class="top-25" id="top25Rankings" style="display: none;"></div>
+</div>
+
+
+<div id="menuOverlay" onclick="closeTeamMenu()"></div>
+<div id="teamMenu">
+  <h3>Team Menu</h3>
+  <button onclick="showRosterStats()">View Roster Strength</button>
+  <button onclick="closeTeamMenu()">Close Menu</button>
+</div>
+<div id="teamSelectorOverlay" style="display:block; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000;"></div>
+
+<div id="teamSelectorModal" style="
+  display:block;
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  background:white;
+  border-radius:8px;
+  padding:30px;
+  width:320px;
+  text-align:center;
+  box-shadow:0 4px 10px rgba(0,0,0,0.4);
+  z-index:2001;
+">
+  <h3>Select Your Team</h3>
+    <select id="teamDropdown">
+      <optgroup label="ACC">
+        <option>Boston College Eagles</option>
+        <option>Cal Golden Bears</option>
+        <option>Clemson Tigers</option>
+        <option>Duke Blue Devils</option>
+        <option>Florida State Seminoles</option>
+        <option>Georgia Tech Yellow Jackets</option>
+        <option>Louisville Cardinals</option>
+        <option>Miami Hurricanes</option>
+        <option>NC State Wolfpack</option>
+        <option>North Carolina Tar Heels</option>
+        <option>Pitt Panthers</option>
+        <option>SMU Mustangs</option>
+        <option>Stanford Cardinal</option>
+        <option>Syracuse Orange</option>
+        <option>Virginia Cavaliers</option>
+        <option>Virginia Tech Hokies</option>
+        <option>Wake Forest Demon Deacons</option>
+      </optgroup>
+
+      <optgroup label="American Conference">
+        <option>Army Black Knights</option>
+        <option>Charlotte 49ers</option>
+        <option>East Carolina Pirates</option>
+        <option>FAU Owls</option>
+        <option>Memphis Tigers</option>
+        <option>Navy Midshipmen</option>
+        <option>North Texas Mean Green</option>
+        <option>Rice Owls</option>
+        <option>South Florida Bulls</option>
+        <option>Temple Owls</option>
+        <option>Tulane Green Wave</option>
+        <option>Tulsa Golden Hurricane</option>
+        <option>UAB Blazers</option>
+        <option>UTSA Roadrunners</option>
+      </optgroup>
+
+      <optgroup label="Big 12">
+        <option>Arizona Wildcats</option>
+        <option>Arizona State Sun Devils</option>
+        <option>Baylor Bears</option>
+        <option>BYU Cougars</option>
+        <option>Cincinnati Bearcats</option>
+        <option>Colorado Buffaloes</option>
+        <option>Houston Cougars</option>
+        <option>Iowa State Cyclones</option>
+        <option>Kansas Jayhawks</option>
+        <option>Kansas State Wildcats</option>
+        <option>Oklahoma State Cowboys</option>
+        <option>TCU Horned Frogs</option>
+        <option>Texas Tech Red Raiders</option>
+        <option>UCF Knights</option>
+        <option>Utah Utes</option>
+        <option>West Virginia Mountaineers</option>
+      </optgroup>
+
+      <optgroup label="Big Ten">
+        <option>Illinois Fighting Illini</option>
+        <option>Indiana Hoosiers</option>
+        <option>Iowa Hawkeyes</option>
+        <option>Maryland Terrapins</option>
+        <option>Michigan Wolverines</option>
+        <option>Michigan State Spartans</option>
+        <option>Minnesota Golden Gophers</option>
+        <option>Nebraska Cornhuskers</option>
+        <option>Northwestern Wildcats</option>
+        <option>Ohio State Buckeyes</option>
+        <option>Oregon Ducks</option>
+        <option>Penn State Nittany Lions</option>
+        <option>Purdue Boilermakers</option>
+        <option>Rutgers Scarlet Knights</option>
+        <option>UCLA Bruins</option>
+        <option>USC Trojans</option>
+        <option>Washington Huskies</option>
+        <option>Wisconsin Badgers</option>
+      </optgroup>
+
+      <optgroup label="Conference USA">
+        <option>Delaware Blue Hens</option>
+        <option>FIU Panthers</option>
+        <option>Jacksonville State Gamecocks</option>
+        <option>Kennesaw State Owls</option>
+        <option>Liberty Flames</option>
+        <option>Louisiana Tech Bulldogs</option>
+        <option>MTSU Blue Raiders</option>
+        <option>Missouri State Bears</option>
+        <option>New Mexico State Aggies</option>
+        <option>Sam Houston Bearkats</option>
+        <option>UTEP Miners</option>
+        <option>Western Kentucky Hilltoppers</option>
+      </optgroup>
+
+      <optgroup label="FBS Independents">
+        <option>Notre Dame Fighting Irish</option>
+        <option>UConn Huskies</option>
+      </optgroup>
+
+      <optgroup label="MAC">
+        <option>Akron Zips</option>
+        <option>Ball State Cardinals</option>
+        <option>Bowling Green Falcons</option>
+        <option>Buffalo Bulls</option>
+        <option>Central Michigan Chippewas</option>
+        <option>Eastern Michigan Eagles</option>
+        <option>Kent State Golden Flashes</option>
+        <option>Massachusetts Minutemen</option>
+        <option>Miami (Ohio) RedHawks</option>
+        <option>Northern Illinois Huskies</option>
+        <option>Ohio Bobcats</option>
+        <option>Toledo Rockets</option>
+        <option>Western Michigan Broncos</option>
+      </tgroup>
+
+      <optgroup label="Mountain West">
+        <option>Air Force Falcons</option>
+        <option>Boise State Broncos</option>
+        <option>Colorado State Rams</option>
+        <option>Fresno State Bulldogs</option>
+        <option>Hawai'i Rainbow Warriors</option>
+        <option>Nevada Wolf Pack</option>
+        <option>New Mexico Lobos</option>
+        <option>San Diego State Aztecs</option>
+        <option>San Jose State Spartans</option>
+        <option>UNLV Rebels</option>
+        <option>Utah State Aggies</option>
+        <option>Wyoming Cowboys</option>
+      </optgroup>
+
+      <optgroup label="Pac-12">
+        <option>Oregon State Beavers</option>
+        <option>Washington State Cougars</option>
+      </optgroup>
+
+      <optgroup label="SEC">
+        <option>Alabama Crimson Tide</option>
+        <option>Arkansas Razorbacks</option>
+        <option>Auburn Tigers</option>
+        <option>Florida Gators</option>
+        <option>Georgia Bulldogs</option>
+        <option>Kentucky Wildcats</option>
+        <option>LSU Tigers</option>
+        <option>Mississippi State Bulldogs</option>
+        <option>Mizzou Tigers</option>
+        <option>Oklahoma Sooners</option>
+        <option>Ole Miss Rebels</option>
+        <option>South Carolina Gamecocks</option>
+        <option>Tennessee Volunteers</option>
+        <option>Texas Longhorns</option>
+        <option>Texas A&amp;M Aggies</option>
+        <option>Vanderbilt Commodores</option>
+      </optgroup>
+
+      <optgroup label="Sun Belt">
+        <option>Appalachian State Mountaineers</option>
+        <option>Arkansas State Red Wolves</option>
+        <option>Coastal Carolina Chanticleers</option>
+        <option>Georgia Southern Eagles</option>
+        <option>Georgia State Panthers</option>
+        <option>James Madison Dukes</option>
+        <option>Louisiana Ragin' Cajuns</option>
+        <option>Marshall Thundering Herd</option>
+        <option>Old Dominion Monarchs</option>
+        <option>South Alabama Jaguars</option>
+        <option>Southern Miss Golden Eagles</option>
+        <option>Texas State Bobcats</option>
+        <option>Troy Trojans</option>
+        <option>UL Monroe Warhawks</option>
+      </optgroup>
+    </select>
+    <hr>
+  <button onclick="confirmTeamSelection()" style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">
+    Confirm
+  </button>
+</div>
+
+<script>
+let season = 1;
+let team = [];
+let recruits = [];
+let careerHistory = [];
+let selectedTeamName = '';
+let selectedTeamConference = '';
+let allTeamsData = [];
+
+const conferences = {
+  "ACC": [
+    "Boston College Eagles", "Cal Golden Bears", "Clemson Tigers", "Duke Blue Devils",
+    "Florida State Seminoles", "Georgia Tech Yellow Jackets", "Louisville Cardinals", "Miami Hurricanes",
+    "NC State Wolfpack", "North Carolina Tar Heels", "Pitt Panthers", "SMU Mustangs",
+    "Stanford Cardinal", "Syracuse Orange", "Virginia Cavaliers", "Virginia Tech Hokies",
+    "Wake Forest Demon Deacons"
+  ],
+  "American Conference": [
+    "Army Black Knights", "Charlotte 49ers", "East Carolina Pirates", "FAU Owls",
+    "Memphis Tigers", "Navy Midshipmen", "North Texas Mean Green", "Rice Owls",
+    "South Florida Bulls", "Temple Owls", "Tulane Green Wave", "Tulsa Golden Hurricane",
+    "UAB Blazers", "UTSA Roadrunners"
+  ],
+  "Big 12": [
+    "Arizona Wildcats", "Arizona State Sun Devils", "Baylor Bears", "BYU Cougars",
+    "Cincinnati Bearcats", "Colorado Buffaloes", "Houston Cougars", "Iowa State Cyclones",
+    "Kansas Jayhawks", "Kansas State Wildcats", "Oklahoma State Cowboys", "TCU Horned Frogs",
+    "Texas Tech Red Raiders", "UCF Knights", "Utah Utes", "West Virginia Mountaineers"
+  ],
+  "Big Ten": [
+    "Illinois Fighting Illini", "Indiana Hoosiers", "Iowa Hawkeyes", "Maryland Terrapins",
+    "Michigan Wolverines", "Michigan State Spartans", "Minnesota Golden Gophers", "Nebraska Cornhuskers",
+    "Northwestern Wildcats", "Ohio State Buckeyes", "Oregon Ducks", "Penn State Nittany Lions",
+    "Purdue Boilermakers", "Rutgers Scarlet Knights", "UCLA Bruins", "USC Trojans",
+    "Washington Huskies", "Wisconsin Badgers"
+  ],
+  "Conference USA": [
+    "Delaware Blue Hens", "FIU Panthers", "Jacksonville State Gamecocks", "Kennesaw State Owls",
+    "Liberty Flames", "Louisiana Tech Bulldogs", "MTSU Blue Raiders", "Missouri State Bears",
+    "New Mexico State Aggies", "Sam Houston Bearkats", "UTEP Miners", "Western Kentucky Hilltoppers"
+  ],
+  "FBS Independents": [
+    "Notre Dame Fighting Irish", "UConn Huskies"
+  ],
+  "MAC": [
+    "Akron Zips", "Ball State Cardinals", "Bowling Green Falcons", "Buffalo Bulls",
+    "Central Michigan Chippewas", "Eastern Michigan Eagles", "Kent State Golden Flashes", "Massachusetts Minutemen",
+    "Miami (Ohio) RedHawks", "Northern Illinois Huskies", "Ohio Bobcats", "Toledo Rockets",
+    "Western Michigan Broncos"
+  ],
+  "Mountain West": [
+    "Air Force Falcons", "Boise State Broncos", "Colorado State Rams", "Fresno State Bulldogs",
+    "Hawai'i Rainbow Warriors", "Nevada Wolf Pack", "New Mexico Lobos", "San Diego State Aztecs",
+    "San Jose State Spartans", "UNLV Rebels", "Utah State Aggies", "Wyoming Cowboys"
+  ],
+  "Pac-12": [
+    "Oregon State Beavers", "Washington State Cougars"
+  ],
+  "SEC": [
+    "Alabama Crimson Tide", "Arkansas Razorbacks", "Auburn Tigers", "Florida Gators",
+    "Georgia Bulldogs", "Kentucky Wildcats", "LSU Tigers", "Mississippi State Bulldogs",
+    "Mizzou Tigers", "Oklahoma Sooners", "Ole Miss Rebels", "South Carolina Gamecocks",
+    "Tennessee Volunteers", "Texas Longhorns", "Texas A&M Aggies", "Vanderbilt Commodores"
+  ],
+  "Sun Belt": [
+    "Appalachian State Mountaineers", "Arkansas State Red Wolves", "Coastal Carolina Chanticleers", "Georgia Southern Eagles",
+    "Georgia State Panthers", "James Madison Dukes", "Louisiana Ragin' Cajuns", "Marshall Thundering Herd",
+    "Old Dominion Monarchs", "South Alabama Jaguars", "Southern Miss Golden Eagles", "Texas State Bobcats",
+    "Troy Trojans", "UL Monroe Warhawks"
+  ]
+};
+
+function simulateSchedule(teamStrength, userTeam, userConference) {
+  const shuffle = (array) => {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  };
+
+  let scheduledOpponents = [];
+  const p4Conferences = ["ACC", "Big 12", "Big Ten", "SEC"];
+
+  let numConferenceGames = 8;
+  if (p4Conferences.includes(userConference)) {
+    numConferenceGames = 9;
+  } else if (userConference === 'FBS Independents') {
+    numConferenceGames = 0;
+  } else if (userConference === 'Pac-12') {
+    numConferenceGames = 1;
+  }
+
+  const numNonConferenceGames = 12 - numConferenceGames;
+
+  if (numConferenceGames > 0) {
+    const potentialConferenceOpponents = conferences[userConference].filter(t => t !== userTeam);
+    scheduledOpponents.push(...shuffle(potentialConferenceOpponents).slice(0, numConferenceGames));
+  }
+
+  const allOtherTeams = Object.keys(conferences)
+    .filter(conf => conf !== userConference)
+    .flatMap(conf => conferences[conf]);
+
+  scheduledOpponents.push(...shuffle(allOtherTeams).slice(0, numNonConferenceGames));
+  
+  const yourSchedule = [];
+  shuffle(scheduledOpponents);
+
+  for (let i = 0; i < 12; i++) {
+      const opponentName = scheduledOpponents[i];
+      const opponentData = allTeamsData.find(t => t.name === opponentName);
+      const opponentStrength = opponentData ? opponentData.strength : 1 + Math.random() * 3;
+
+      const strengthDifference = teamStrength - opponentStrength;
+      const k = 2.5;
+      const winChance = 1 / (1 + Math.exp(-k * strengthDifference));
+
+      const result = Math.random() < winChance ? "✅ Win" : "❌ Loss";
+      
+      yourSchedule.push({
+        week: i + 1,
+        opponent: opponentName,
+        strength: opponentStrength.toFixed(1),
+        result
+      });
+  }
+  return yourSchedule;
+}
+
+
+const positions = ["QB", "RB", "WR", "TE", "OL", "DL", "LB", "CB", "S"];
+const classYears = ["FRESHMAN", "SOPHOMORE", "JUNIOR", "SENIOR"];
+
+const positionAttributes = {
+  QB: ["Arm", "Accuracy", "Vision", "Leadership"],
+  RB: ["Speed", "Footwork", "Power", "Durability"],
+  WR: ["Speed", "Hands", "Routes", "Y.A.C."],
+  TE: ["Blocking", "Hands", "Routes", "Y.A.C."],
+  OL: ["Run Block", "Pass Block", "Strength", "Explosion"],
+  DL: ["Strength", "Pass Rush", "Pursuit", "Tackling"],
+  LB: ["Coverage", "Blitz", "Pursuit", "Tackling"],
+  CB: ["Coverage", "Speed", "Pursuit", "Tackling"],
+  S:  ["Coverage", "Speed", "Pursuit", "Tackling"]
+};
+
+const positionAttributeWeights = {
+  QB: [0.35, 0.35, 0.2, 0.1],
+  RB: [0.35, 0.25, 0.25, 0.15],
+  WR: [0.30, 0.25, 0.25, 0.20],
+  TE: [0.30, 0.25, 0.25, 0.20],
+  OL: [0.30, 0.30, 0.25, 0.15],
+  DL: [0.30, 0.30, 0.2, 0.2],
+  LB: [0.25, 0.25, 0.25, 0.25],
+  CB: [0.35, 0.25, 0.2, 0.2],
+  S:  [0.30, 0.25, 0.25, 0.20]
+};
+
+const gradeValues = { A:4.0, "A-":3.7, "B+":3.3, B:3.0, "B-":2.7, "C+":2.3, C:2.0, "C-":1.7, "D+":1.3 };
+
+function numericToGrade(num) {
+  let closest = "C";
+  let minDiff = Infinity;
+  for (const [grade, val] of Object.entries(gradeValues)) {
+    const diff = Math.abs(val - num);
+    if (diff < minDiff) { minDiff = diff; closest = grade; }
+  }
+  return closest;
+}
+
+function getRandomName() {
+  const first = ["Jamal", "Jackson", "Tyrone", "Liam", "DeShawn", "Hunter", "Kai", "Caleb", "Riley", "Kay", "Kermit", "Gus", "Djouvensky", "Hannes", "Panda", "Alpha", "Jaden", "Andrew", "James", "Thomas", "Dude", "Demon", "Sirr", "King", "Squirrel", "Deuce", "Chief", "Legend", "Grant", "Rocky", "Nitro", "Blazen", "Moh", "Da'Realyst", "Noah", "General", "Mike", "Michael", "Dick", "Poona", "Jamoris", "Equanimeous", "Wave", "I-Perfection", "Pig", "Kool-Aid", "Bumper", "Barkevious", "Jonathan", "Lil'Jordan", "Coby", "Kobe", "Cobee", "Divine", "Rachad", "Rachaad", "Leroy", "Quantavius", "Swayze", "Corn", "Smoke", "Steele", "Yourhighness", "Oxendine", "Silverberry", "Gentle", "T-Bob", "Guy", "Lloyd", "Luther", "Pork Chop", "Kyle", "Golden", "Phat", "Boobie", "Chris", "Manti", "BJ", "Jim", "Monte", "Munchie", "Jim Bob", "I.M.", "Isiah", "Moses", "Walter", "Bryce", "Taylor", "Lawrence", "Alex", "Julius", "Emmitt", "Barry", "Bo", "Steve", "Geno", "Bruce", "Mike", "Young", "William", "Lamar", "Ha-Ha", "Calvin", "Andre", "Drew", "Brad", "Joe", "Tez", "Lane", "Antonio", "Ben", "Marshawn", "Carson", "Robert", "Nate", "Darnell", "AJ", "Amon-Ra", "Marquise", "Javonte", "Jameson", "Jamaal", "Storm", "Lucious", "Happy", "Lion", "Memorable", "Bronko", "Dee", "Tiger", "D'Brickashaw", "Jake", "Parker", "Decoldest", "Peerless", "Jimmy", "Buster"];
+  const last = ["Johnson", "Taylor", "King", "Allen", "Moore", "Jackson", "Lewis", "Robinson", "Mertens", "Witkowski", "Thomas", "Keller", "Sellers", "Williams", "Aguilar", "Knigga", "James", "Andrews", "Clark", "Bility", "Lono-Wong", "Tuggle", "Beers", "Beerman", "Journey", "Borders", "Knight", "White", "Large", "Bible", "Clowney", "Person", "Muskrat", "Khan", "Schlenbaker", "Askew", "Hammer", "Ferguson", "Booty", "Felt", "Ford", "Slaughter", "St. Brown", "Ryder", "Harris", "Cage", "McKinstry", "Pool", "Mingo", "Jordan", "Humphrey", "Bryant", "Deablo", "Wildgoose", "White", "Ambush", "Butkus", "Sturdivant", "Waters", "Elder", "Monday", "Stonebreaker", "Morgan", "Chambers", "Oxendine", "Mouhon", "Hebert", "Whimper", "Cushenberry III", "Burden III", "Sackrider", "Womack", "Tate", "Watts", "Feaster", "Fuamatu-Ma'afala", "Te'o", "Cooter", "Bob Cooter", "Dickey", "Cristo", "Legaux", "Hipp", "Young", "Lawrence", "Taylor", "Smith", "Peppers", "Chestnut", "Smith", "Sanders", "Jones", "Johnson", "Boozer", "Buffalomeat", "Shakespeare", "Blewitt", "Clinton-Dix", "Roethlisberger", "Brees", "Lynch", "Carson", "Roberts", "Robertson", "Turbin", "Rawls", "Brown", "Washington", "Duck", "Pusey", "Titsworth", "Factor", "Nagurski", "Liner", "Shanks", "Butt", "Elliott", "Cabell", "Rhymes", "Price", "Crawford", "Johns"];
+  
+  const firstName = first[Math.floor(Math.random() * first.length)];
+  const lastName = last[Math.floor(Math.random() * last.length)];
+  
+  if (firstName === "Mike" && lastName === "Jones") {
+    return "Mike 'WHO' Jones";
+  }
+  else if (firstName === "Chris" && lastName === "Johnson") {
+    return "CJ2K";
+  }
+  else if (firstName === "Michael" && lastName === "Jordan") {
+    return "🐐";
+  }
+  else if (firstName === "Marquise" && lastName === "Brown") {
+    return "Hollywood Brown";
+  }
+  else return `${firstName} ${lastName}`;
+
+}
+
+function getRandomGrade() {
+  const grades = Object.keys(gradeValues);
+  return grades[Math.floor(Math.random() * grades.length)];
+}
+
+function calculateOverallWeighted(ratings, pos) {
+  const attributes = positionAttributes[pos];
+  const weights = positionAttributeWeights[pos];
+  let total = 0;
+  for (let i = 0; i < attributes.length; i++) {
+    total += gradeValues[ratings[attributes[i]]] * weights[i];
+  }
+  return numericToGrade(total);
+}
+
+function generatePlayer(isRecruit = false, pos = null) {
+  const chosenPos = pos || positions[Math.floor(Math.random() * positions.length)];
+  const attributes = positionAttributes[chosenPos];
+  const ratings = {};
+  attributes.forEach(attr => ratings[attr] = getRandomGrade());
+  const overall = calculateOverallWeighted(ratings, chosenPos);
+  return {
+    name: getRandomName(),
+    pos: chosenPos,
+    class: isRecruit ? "FRESHMAN" : classYears[Math.floor(Math.random() * classYears.length)],
+    grade: overall,
+    ratings,
+    history: []
+  };
+}
+
+function generateRoster() {
+  team = [];
+  positions.forEach(pos => team.push(generatePlayer(false, pos)));
+}
+
+function generateRecruits() {
+  recruits = [];
+  const recruitPositions = positions.slice(0, 9);
+  recruitPositions.forEach(pos => recruits.push(generatePlayer(true, pos)));
+}
+
+function createPlayerCard(player, isRecruit = false, index = -1) {
+  const card = document.createElement("div");
+  card.className = "player-card" + (isRecruit ? " recruit" : "");
+  const ratingsHtml = Object.entries(player.ratings)
+    .map(([k, v]) => `<div>${k} <span style="float:right">${v}</span></div>`).join("");
+  card.innerHTML = `
+    <div class="name">${player.name}</div>
+    <div class="info">${player.pos} - ${player.class} - Grade: <strong>${player.grade}</strong></div>
+    <div class="ratings">${ratingsHtml}</div>
+  `;
+  if (isRecruit) {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "select";
+    checkbox.dataset.index = index;
+    checkbox.addEventListener("change", limitSelection);
+    card.appendChild(checkbox);
+  }
+  return card;
+}
+
+function renderRoster() {
+  const container = document.getElementById("roster");
+  container.innerHTML = "";
+  team.forEach(player => container.appendChild(createPlayerCard(player)));
+}
+
+function renderRecruits() {
+  const container = document.getElementById("recruits");
+  container.innerHTML = "";
+  recruits.forEach((player, i) => container.appendChild(createPlayerCard(player, true, i)));
+}
+
+function openTeamMenu() {
+  document.getElementById("menuOverlay").style.display = "block";
+  document.getElementById("teamMenu").style.display = "block";
+}
+function closeTeamMenu() {
+  document.getElementById("menuOverlay").style.display = "none";
+  document.getElementById("teamMenu").style.display = "none";
+}
+
+function showRosterStats() {
+  const avg = team.reduce((a,b)=>a+(gradeValues[b.grade]||2.0),0)/team.length;
+  alert(`📈 Team Average Rating: ${numericToGrade(avg)} (${avg.toFixed(2)})`);
+}
+
+function limitSelection() {
+  const checkboxes = document.querySelectorAll(".select");
+  const checked = Array.from(checkboxes).filter(cb => cb.checked);
+  const pickedPositions = checked.map(cb => recruits[cb.dataset.index].pos);
+  checkboxes.forEach(cb => {
+    const recruit = recruits[cb.dataset.index];
+    const isChecked = cb.checked;
+    const positionAlreadyPicked = pickedPositions.includes(recruit.pos);
+    const anotherOfSamePosition = positionAlreadyPicked && !isChecked;
+    cb.disabled = ((checked.length >= 5 && !isChecked) || anotherOfSamePosition);
+  });
+}
+
+function initializeAllTeams() {
+    allTeamsData = [];
+    Object.values(conferences).flat().forEach(name => {
+        allTeamsData.push({
+            name,
+            strength: 1.0 + Math.random() * 3.0,
+            wins: 0,
+            losses: 0
+        });
+    });
+}
+
+function simulateAISeasons(userTeamName, userWins, userLosses) {
+    allTeamsData.forEach(team => {
+        if (team.name === userTeamName) {
+            team.wins = userWins;
+            team.losses = userLosses;
+        } else {
+            let wins = 0;
+            for (let i = 0; i < 12; i++) {
+                const opponentStrength = 1.0 + Math.random() * 3.0;
+                const strengthDifference = team.strength - opponentStrength;
+                const k = 2.5;
+                const winChance = 1 / (1 + Math.exp(-k * strengthDifference));
+                if (Math.random() < winChance) {
+                    wins++;
+                }
+            }
+            team.wins = wins;
+            team.losses = 12 - wins;
+        }
+    });
+
+    allTeamsData.forEach(team => {
+        team.pollScore = (team.wins * 2) + team.strength;
+    });
+
+    allTeamsData.sort((a, b) => b.pollScore - a.pollScore);
+}
+
+function renderTop25() {
+    let rankingHTML = `<strong>🏆 Final Top 25 Poll</strong><br><br>`;
+    const preFormatted = [];
+    for(let i = 0; i < 25; i++) {
+        const team = allTeamsData[i];
+        const rank = (i + 1).toString().padStart(2, ' ');
+        preFormatted.push(`${rank}. ${team.name} (${team.wins}-${team.losses})`);
+    }
+    rankingHTML += preFormatted.join('\n');
+    document.getElementById("top25Rankings").innerHTML = rankingHTML;
+}
+
+
+function submitRecruits() {
+  const selected = Array.from(document.querySelectorAll(".select:checked"));
+  let signed = [];
+  selected.forEach(cb => {
+    const idx = cb.dataset.index;
+    const recruit = recruits[idx];
+    const chance = selected.length === 1 ? 0.95 : selected.length === 2 ? 0.91 : selected.length === 3 ? 0.87 : 0.81;
+    if (Math.random() < chance) signed.push(recruit);
+  });
+
+  team.forEach(p => {
+    if (p.class === "SENIOR") {
+      careerHistory.push({ name: p.name, pos: p.pos, finalGrade: p.grade, seasons: p.history });
+    }
+  });
+
+  team = team.filter(p => p.class !== "SENIOR");
+  team.forEach(p => {
+    const nextClass = classYears[classYears.indexOf(p.class) + 1];
+    p.class = nextClass || "SENIOR";
+  });
+
+  team.forEach(player => {
+    const attrs = positionAttributes[player.pos];
+    attrs.forEach(attr => {
+      let val = gradeValues[player.ratings[attr]];
+      val += Math.random() * 0.3;
+      if (val > 4.0) val = 4.0;
+      player.ratings[attr] = numericToGrade(val);
+    });
+    player.grade = calculateOverallWeighted(player.ratings, player.pos);
+  });
+
+  signed.forEach(newPlayer => {
+    newPlayer.history = [`Year ${season} - FRESHMAN`];
+    const existingIndex = team.findIndex(p => p.pos === newPlayer.pos);
+    if (existingIndex !== -1) team[existingIndex] = newPlayer;
+    else team.push(newPlayer);
+  });
+
+  positions.forEach(pos => {
+    if (!team.some(p => p.pos === pos)) {
+      const walkOn = generatePlayer(true, pos);
+      walkOn.name += " (Walk-on)";
+      team.push(walkOn);
+    }
+  });
+
+  const teamTalent = team.reduce((sum, p) => sum + (gradeValues[p.grade] || 2.0), 0);
+  const teamStrength = teamTalent / team.length;
+  
+  const userTeamData = allTeamsData.find(t => t.name === selectedTeamName);
+  if(userTeamData) {
+      userTeamData.strength = teamStrength;
+  }
+
+  document.getElementById("message").innerHTML =
+    `Recruits Signed:<br>➡️ ${signed.map(p => p.name).join("<br>➡️ ") || "None"}`;
+  
+  const schedule = simulateSchedule(teamStrength, selectedTeamName, selectedTeamConference);
+  
+  const wins = schedule.filter(game => game.result.includes("Win")).length;
+  const losses = 12 - wins;
+
+  simulateAISeasons(selectedTeamName, wins, losses);
+  
+  document.getElementById('depthChart').style.display = 'block';
+  document.getElementById('top25Rankings').style.display = 'block';
+  
+  renderTop25();
+  
+  let result = "";
+  const rank = allTeamsData.findIndex(t => t.name === selectedTeamName) + 1;
+  if (rank === 1) result = "🏆 You won the National Championship!";
+  else if (rank <= 12) result = "You made the NCAA Playoffs!";
+  else if (wins >= 6) result = "🎉 You made a Bowl Game!";
+  else result = "😢 Missed the postseason.";
+  
+  let scheduleHTML = `<strong>Season ${season} Summary</strong><br>
+  Team Talent Score: ${teamTalent.toFixed(1)} (Avg: ${teamStrength.toFixed(2)})<br>
+  <strong>Record: ${wins}-${losses}</strong> (Final Rank: #${rank})<br>
+  ${result}<br><br>
+  <strong>📅 Schedule & Results</strong><br>`;
+
+  const scheduleResults = schedule.map(game => 
+    `Week ${game.week.toString().padStart(2, ' ')}: vs. ${game.opponent} (Rating: ${game.strength}) — ${game.result}`
+  ).join('<br>');
+  scheduleHTML += scheduleResults;
+
+  document.getElementById("seasonSummary").innerHTML = scheduleHTML;
+
+  renderDepthChart();
+
+  season++;
+  document.getElementById("seasonTitle").textContent = `Season ${season} - ${selectedTeamName} Roster`;
+
+  initializeAllTeams();
+  generateRecruits();
+  renderRoster();
+  renderRecruits();
+}
+
+function renderDepthChart() {
+  const output = team
+    .sort((a, b) => positions.indexOf(a.pos) - positions.indexOf(b.pos))
+    .map(p => `${p.pos}: ${p.name} (${p.class}, ${p.grade})`)
+    .join("\n");
+  document.getElementById("depthChart").innerText = `📊 Depth Chart\n\n${output}`;
+}
+
+// Initial game start
+initializeAllTeams();
+generateRoster();
+generateRecruits();
+renderRoster();
+renderRecruits();
+
+function confirmTeamSelection() {
+  const dropdown = document.getElementById("teamDropdown");
+  const choice = dropdown.value;
+
+  if (!choice) {
+    alert("Please select a team.");
+    return;
+  }
+
+  selectedTeamName = choice;
+  selectedTeamConference = Object.keys(conferences).find(conf =>
+    conferences[conf].includes(selectedTeamName)
+  );
+
+  document.getElementById("seasonTitle").textContent = `Season ${season} - ${selectedTeamName} Roster`;
+  document.getElementById("teamSelectorModal").style.display = "none";
+  document.getElementById("teamSelectorOverlay").style.display = "none";
+}
+
+</script>
+
+</body>
+</html>
