@@ -1,0 +1,141 @@
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      margin: 0;
+      background: #f1f3f6;
+    }
+
+    header {
+      background: #FF8200;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .section-title {
+      font-size: 1.4em;
+      margin: 20px 0 10px;
+      border-bottom: 2px solid #444;
+      padding-bottom: 5px;
+    }
+
+    .player-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .player-card {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      width: 200px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .player-card.recruit {
+      background: #dbe9ff;
+    }
+
+    .player-card .name {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 4px;
+    }
+
+    .player-card .info {
+      font-size: 0.9em;
+      margin-bottom: 6px;
+    }
+
+    .ratings {
+      font-size: 0.85em;
+    }
+
+    .button {
+      margin-top: 20px;
+      padding: 10px 18px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .season-summary, .depth-chart, .top-25 {
+      margin-top: 20px;
+      background: #eee;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
+    .player-card input.select {
+      transform: scale(1.1);
+      margin-top: 8px;
+    }
+
+    /* Popup menu styling */
+    #teamMenu {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      width: 300px;
+      display: none;
+      z-index: 1000;
+    }
+
+    #menuOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+
+    #teamMenu h3 {
+      margin-top: 0;
+      color: #002868;
+    }
+
+    #teamMenu button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #teamMenu button:hover {
+      background: #005bb5;
+    }
